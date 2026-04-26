@@ -1,3 +1,4 @@
+
 ## DSC-232-Group-Project
 
 # Question 1:
@@ -16,7 +17,7 @@ C. Total memory = 189.94 GB - Driver Memory/ Executor Instances
 8-1 = 7 Executor Instances
 (128-2)/7=18  
 
-D. 
+D. <img width="1196" height="328" alt="Screenshot 2026-04-22 at 9 05 41 PM" src="https://github.com/user-attachments/assets/b6f633f6-1f32-4810-82f5-4c969bcbd033" />  
 
 # Question 3:
 A. The total amount of observations is 792,244,463  
