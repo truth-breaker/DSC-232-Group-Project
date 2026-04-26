@@ -1,9 +1,9 @@
 ## DSC-232-Group-Project
 
 # Question 1:
-\ A. Github ID set up for each team memember
-\ B. Github repository set for the team
-\ C. https://www.kaggle.com/datasets/lordpatil/spotify-metadata-by-annas-archive
+A. Github ID set up for each team member  
+B. Github repository set for the team  
+C. https://www.kaggle.com/datasets/lordpatil/spotify-metadata-by-annas-archive
 
 # Question 2:
 \ A. Set up and synced our access and expanse accounts. Shared folder added that is accessible to every group member. Group members added each other's workspace so we can access each others progress. Within the hosted jupyter notebook, dataset was uploaded using Kaggle API and then unzipped; dataset was then explored to answer following questions.
