@@ -23,15 +23,14 @@ D.
 # Question 3:
 A. The total amount of observations is 792,244,463  
 
-B. The data is broken up into 7 subsets tables: artists, artist_genre, artist_images, artist_albums, available markets, albums, album_images, tracks, and track_artist. Each table contains columns defining the metadata for each topic. 
-Artists -  has columns related to artist name, Spotify ID, popularity, and follower count; this table contains both categorical and continuous variables.
-Artist_genre - columns linking artist name and Spotify ID to an associated genre; this table contains both categorical and continuous variables.
-Artist_albums - columns define whether an artist is the primary album artist or is a featured guest artist; this table contains only continuous variables.
-Available markets - columns include country codes where music content is available; this table contains only  categorical variables.
-Albums - contains metadata identifying an album name, type, release date, label, popularity, UPC, and available markets; this table contains both categorical and continuous variables.
-Tracks - columns show track name, Spotify ID, ISRC, duration, popularity, explicit tracker, track number, and the album it originates from; this table contains both categorical and continuous variables.
-Track_artist - columns associate an artist or artists to a track; this table contains only categorical data.
-
+B. The data is broken up into 7 subsets tables: artists, artist_genre, artist_images, artist_albums, available markets, albums, album_images, tracks, and track_artist. Each table contains columns defining the metadata for each topic.   
+Artists -  has columns related to artist name, Spotify ID, popularity, and follower count; this table contains both categorical and continuous variables.  
+Artist_genre - columns linking artist name and Spotify ID to an associated genre; this table contains both categorical and continuous variables.  
+Artist_albums - columns define whether an artist is the primary album artist or is a featured guest artist; this table contains only continuous variables.  
+Available markets - columns include country codes where music content is available; this table contains only  categorical variables.  
+Albums - contains metadata identifying an album name, type, release date, label, popularity, UPC, and available markets; this table contains both categorical and continuous variables.  
+Tracks - columns show track name, Spotify ID, ISRC, duration, popularity, explicit tracker, track number, and the album it originates from; this table contains both categorical and continuous variables.  
+Track_artist - columns associate an artist or artists to a track; this table contains only categorical data.  
 Our target columns relate to data that captures an artists popularity,country codes and time metrics for eachv track/album.  
 
 C. The only tables that are missing/null values are the tracks, artist albums, and albums; there are no duplicate values within the table. The following list goes over which columns per table is missing data:
