@@ -61,8 +61,12 @@ d. For image data, plotted the distribution of album image sizes and included sa
 ### Handling Missing Values
 
 ### Handling Data Imbalance
+The dataset may be skewed to more popular artists and tracks which wouldn’t represent the data accurately. To handle this, we will closely examine the popularity distribution and use techniques such as sampling or weights to ensure the model does not overfit to  only the most popular ones.
 
 ### Transformations (Scaling, Encoding, Feature Engineering)
+- Scaling: for numerical variables such as artist followers, popularity, and track duration in order to keep a consistent range across all rows and prevent the extremely large values from taking over the model.
+- Encoding: for categorical variables such as genre, album type, and available markets in order to convert them to a numerical form via processes such as one hot encoding so that we can perform analysis.
+- Feature engineering: creating features such as year, number of artists on a track, and number of markets available from the variables provided will help us break down and better understand the data.
 
 ### Spark Operations for Preprocessing
 
