@@ -66,7 +66,9 @@ The dataset may be skewed to more popular artists and tracks which wouldn’t re
 ### Transformations (Scaling, Encoding, Feature Engineering)
 - **Scaling:** for numerical variables such as artist followers, popularity, and track duration in order to keep a consistent range across all rows and prevent the extremely large values from taking over the model.
 - **Encoding:** for categorical variables such as genre, album type, and available markets in order to convert them to a numerical form via processes such as one hot encoding so that we can perform analysis.
-- **Feature engineering:** creating features such as year, number of artists on a track, and number of markets available from the variables provided will help us break down and better understand the data.
+- **Feature engineering:** creating features such as year, number of artists on a track, and number of markets available from the variables provided will help us break down and better understand the data. This will allow us to view the patterns on a broader scale and understand what factors influence popularity.
+- **Image handling:** standardizing the resolutions by choosing a fixed size available, and examining the popularity across that particular size only.
+
 
 ### Spark Operations for Preprocessing
 
