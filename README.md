@@ -40,14 +40,36 @@ Albums - missing data in the external_id_upc, copyright_c, copyright_p, and exte
 The majority of columns with missing data details sourcing/ownership of certain tracks. The lack of this qualitative data isn’t concerning since it isn’t relevant to our research. The lack of external_id_isrc values can lead to issues when linking data from table to table but it seems to only apply to unique values. The amount of null values for this column is less than 0.01% of the data so this is not too concerning for our study.  
 
 # Question 4:
-a. Created visualizations using Spark aggregations and matplotlib.  
-b. Plotted data with bar charts (top artists by popularity), histograms (track popularity distribution), and scatter plots (duration vs popularity).  
+## 4. Data Plots (4 points)
+
+a. Created visualizations using Spark aggregations and matplotlib/seaborn.  
+b. Plotted data with bar charts (top artists by popularity, colored by genre), histograms (track popularity distribution), and scatter plots (duration vs popularity).  
 c. Each plot is explained below with insights:
    - **Track Popularity Distribution:** Shows most tracks have low popularity, with only a few hits.
    - **Top 10 Artists by Popularity:** Highlights the most popular artists in the dataset.
+   - **Top 10 Artists by Popularity (Colored by Genre):**  
+     This bar chart displays the top 10 artists by popularity, with each bar colored according to the artist’s primary genre. The legend on the right shows the genre categories.  
+     **Insight:** This visualization highlights both the most popular artists and the diversity of genres represented among the top performers, showing that top artists span a range of genres, not just one musical style.
    - **Duration vs Popularity:** Demonstrates that most popular tracks are 2–5 minutes long.
 d. For image data, plotted the distribution of album image sizes and included sample album covers.
 
-**See full code and visualizations in [`Spotify_Popularity_Explorer.ipynb`](./Spotify_Popularity_Explorer.ipynb).**
-
+**See full code and visualizations in [Spotify_Popularity_Explorer.ipynb](./Spotify_Popularity_Explorer.ipynb).**
 # Question 5:
+
+## Preprocessing Plan
+
+### Handling Missing Values
+
+### Handling Data Imbalance
+
+### Transformations (Scaling, Encoding, Feature Engineering)
+
+### Spark Operations for Preprocessing
+
+- `dropDuplicates()` to remove duplicate rows.
+- `filter()` to select or remove rows based on conditions.
+- `fillna()` or `na.drop()` to handle missing values.
+- `groupBy().agg()` for aggregation and combining duplicates.
+- `withColumn()` to create new features or transform existing columns.
+- Spark MLlib transformers (e.g., `StringIndexer`, `OneHotEncoder`, `MinMaxScaler`) for encoding and scaling.
+
