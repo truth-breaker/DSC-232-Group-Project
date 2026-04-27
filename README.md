@@ -40,5 +40,14 @@ Albums - missing data in the external_id_upc, copyright_c, copyright_p, and exte
 The majority of columns with missing data details sourcing/ownership of certain tracks. The lack of this qualitative data isn’t concerning since it isn’t relevant to our research. The lack of external_id_isrc values can lead to issues when linking data from table to table but it seems to only apply to unique values. The amount of null values for this column is less than 0.01% of the data so this is not too concerning for our study.  
 
 # Question 4:
+a. Created visualizations using Spark aggregations and matplotlib.  
+b. Plotted data with bar charts (top artists by popularity), histograms (track popularity distribution), and scatter plots (duration vs popularity).  
+c. Each plot is explained below with insights:
+   - **Track Popularity Distribution:** Shows most tracks have low popularity, with only a few hits.
+   - **Top 10 Artists by Popularity:** Highlights the most popular artists in the dataset.
+   - **Duration vs Popularity:** Demonstrates that most popular tracks are 2–5 minutes long.
+d. For image data, plotted the distribution of album image sizes and included sample album covers.
+
+**See full code and visualizations in [`Spotify_Popularity_Explorer.ipynb`](./Spotify_Popularity_Explorer.ipynb).**
 
 # Question 5:
