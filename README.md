@@ -59,6 +59,7 @@ d. For image data, plotted the distribution of album image sizes and included sa
 ## Preprocessing Plan
 
 ### Handling Missing Values
+Missing data will be handled based on the importance of each feature for predicting track popularity. For key fields such as track name, artist, and duration, rows with missing values will be removed since they are essential for analysis. For less critical fields such as image url, missing values can be left as-is because the other available features still allow for analysis. For numerical features, missing values can be filled with a value that will not change the values that are present. For example, missing duration_ms values can be replaced with the mean or median track duration in the album, and missing popularity values can be filled with the mean or median of the album. For categorical features, missing values such as genre can be labeled as "unknown".
 
 ### Handling Data Imbalance
 The dataset may be skewed to more popular artists and tracks which wouldn’t represent the data accurately. To handle this, we will closely examine the popularity distribution and use techniques such as sampling or weights to ensure the model does not overfit to  only the most popular ones.
