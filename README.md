@@ -39,7 +39,7 @@ Albums - missing data in the external_id_upc, copyright_c, copyright_p, and exte
 The missing data details sourcing/ownership of certain tracks. The lack of this qualitative data isn’t concerning since it isn’t relevant to our research. The lack of external_id_isrc values can lead to issues when linking data from table to table but it seems to only apply to unique values. The amount of null values for this column is less than 0.01% of the total data; with such a tiny percentage of data missing we feel comfortable moving forward with this dataset.  
 
 # Question 4:
-## 4. Data Plots (4 points)
+## Data Plots
 
 a. Created visualizations using Spark aggregations and matplotlib/seaborn.  
 b. Plotted data with bar charts (top artists by popularity, colored by genre), histograms (track popularity distribution), and scatter plots (duration vs popularity).  
