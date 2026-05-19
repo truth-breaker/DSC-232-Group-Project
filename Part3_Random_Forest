@@ -1,0 +1,730 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "title",
+   "metadata": {},
+   "source": [
+    "# Spotify Popularity Prediction Part 3"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-spark",
+   "metadata": {},
+   "source": [
+    "## 1. Spark Session"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "spark-session",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Spark version: 3.5.0\n",
+      "Master: local[*]\n",
+      "Default parallelism: 8\n"
+     ]
+    }
+   ],
+   "source": [
+    "from pyspark.sql import SparkSession\n",
+    "\n",
+    "# Initialize Spark session with enough memory for the 189GB dataset\n",
+    "# 7 executors x 25g = 175g total executor memory across the cluster\n",
+    "\n",
+    "spark = (\n",
+    "    SparkSession.builder\n",
+    "    .appName(\"Spotify_Part3_RF\")\n",
+    "    .config(\"spark.driver.memory\", \"10g\")\n",
+    "    .config(\"spark.executor.instances\", \"7\")\n",
+    "    .config(\"spark.executor.memory\", \"25g\")\n",
+    "    .config(\"spark.executor.memoryOverhead\", \"4g\") \n",
+    "    .config(\"spark.sql.shuffle.partitions\", \"100\")  # reduced from default 200 for sample\n",
+    "    .getOrCreate()\n",
+    ")\n",
+    "\n",
+    "print(\"Spark version:\", spark.version)\n",
+    "print(\"Master:\", spark.sparkContext.master)\n",
+    "print(\"Default parallelism:\", spark.sparkContext.defaultParallelism)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-load",
+   "metadata": {},
+   "source": [
+    "## 2. Load Raw Parquet Tables"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "load-data",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Data loaded\n"
+     ]
+    }
+   ],
+   "source": [
+    "from pyspark.sql import functions as F\n",
+    "\n",
+    "data_path = \"/expanse/lustre/projects/uci157/darenas/shared/spotify_clean_parquet\"\n",
+    "\n",
+    "# Load all tables\n",
+    "tracks = spark.read.parquet(data_path + \"/tracks.parquet\")\n",
+    "artists = spark.read.parquet(data_path + \"/artists.parquet\")\n",
+    "albums = spark.read.parquet(data_path + \"/albums.parquet\")\n",
+    "track_artists = spark.read.parquet(data_path + \"/track_artists.parquet\")\n",
+    "\n",
+    "# Audio features\n",
+    "audio = spark.read.parquet(\"/expanse/lustre/projects/uci157/darenas/shared/spotify_clean_audio_features_parquet\")\n",
+    "\n",
+    "print(\"Data loaded\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-clean",
+   "metadata": {},
+   "source": [
+    "## 3. Cleaning"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "clean-audio",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Audio features cleaning\n",
+    "# Rename duration_ms to avoid confusion with tracks.duration_ms\n",
+    "audio = audio.withColumnRenamed(\"duration_ms\", \"audio_duration_ms\")\n",
+    "\n",
+    "# Drop rows with null response\n",
+    "audio = audio.filter(F.col(\"null_response\").isNull())\n",
+    "\n",
+    "# Cast all audio feature columns to double for ML compatibility\n",
+    "audio_cols = [\n",
+    "    \"audio_duration_ms\", \"time_signature\", \"tempo\",\n",
+    "    \"key\", \"mode\", \"danceability\", \"energy\",\n",
+    "    \"loudness\", \"speechiness\", \"acousticness\",\n",
+    "    \"instrumentalness\", \"liveness\", \"valence\"\n",
+    "]\n",
+    "for c in audio_cols:\n",
+    "    audio = audio.withColumn(c, F.col(c).cast(\"double\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "clean-artists",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Artist deduplication\n",
+    "# Some artists appear multiple times (ex. BTS has entries for each member's solo work)\n",
+    "# Keep only the row with the highest followers_total per artist name\n",
+    "\n",
+    "from pyspark.sql.window import Window\n",
+    "\n",
+    "artists_clean = artists.select(\n",
+    "    F.col(\"rowid\").alias(\"artist_rowid\"),\n",
+    "    F.col(\"id\"),\n",
+    "    F.col(\"name\"),\n",
+    "    F.col(\"followers_total\"),\n",
+    "    F.col(\"popularity\").alias(\"artist_popularity\")\n",
+    ")\n",
+    "\n",
+    "# Window: for each artist name, rank by followers descending\n",
+    "w = Window.partitionBy(\"name\").orderBy(\n",
+    "    F.desc(\"followers_total\"),\n",
+    "    F.desc(\"artist_popularity\")\n",
+    ")\n",
+    "artists_clean = (\n",
+    "    artists_clean\n",
+    "    .withColumn(\"rank\", F.row_number().over(w))\n",
+    "    .filter(F.col(\"rank\") == 1)  # keep only the top row per artist name\n",
+    "    .drop(\"rank\")\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "clean-tracks-albums",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Only take cols we need from each\n",
+    "\n",
+    "# Tracks\n",
+    "tracks_clean = tracks.select(\n",
+    "    F.col(\"rowid\").alias(\"track_rowid\"),\n",
+    "    F.col(\"id\").alias(\"track_id\"),\n",
+    "    F.col(\"name\").alias(\"track_name\"),\n",
+    "    F.col(\"popularity\"),           # this is our prediction target\n",
+    "    F.col(\"duration_ms\").alias(\"track_duration\"),\n",
+    "    F.col(\"explicit\"),\n",
+    "    F.col(\"album_rowid\")\n",
+    ")\n",
+    "\n",
+    "# Sample before joins\n",
+    "# Sampling on tracks first = all 4 joins run on 1.25M rows instead of 256M\n",
+    "# This prevents shuffle files from filling up the executor local disk to prevent spill error\n",
+    "tracks_clean = tracks_clean.sample(False, 0.005, seed=42)\n",
+    "\n",
+    "# Albums\n",
+    "albums_clean = albums.select(\n",
+    "    F.col(\"rowid\").alias(\"album_rowid\"),\n",
+    "    F.col(\"popularity\").alias(\"album_popularity\"),\n",
+    "    \"label\",\n",
+    "    \"total_tracks\"\n",
+    ")\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-joins",
+   "metadata": {},
+   "source": [
+    "## 4. Join Pipeline"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "joins",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Join tracks to audio features, track_artists bridge table, artists, and albums\n",
+    "# All joins are left so we keep tracks even if audio/artist/album data is missing\n",
+    "\n",
+    "main_df = (\n",
+    "    tracks_clean\n",
+    "    # Join audio features on track_id\n",
+    "    .join(audio, tracks_clean.track_id == audio.track_id, \"left\")\n",
+    "    .drop(audio[\"track_id\"])                          # drop duplicate track_id from audio\n",
+    "    # Join bridge table to get artist_rowid per track\n",
+    "    .join(track_artists, tracks_clean.track_rowid == track_artists.track_rowid, \"left\")\n",
+    "    .drop(track_artists[\"track_rowid\"])               # drop duplicate track_rowid\n",
+    "    # Join artists on artist_rowid\n",
+    "    .join(artists_clean, track_artists.artist_rowid == artists_clean.artist_rowid, \"left\")\n",
+    "    .drop(track_artists[\"artist_rowid\"]).drop(artists_clean[\"artist_rowid\"])\n",
+    "    # Join albums on album_rowid\n",
+    "    .join(albums_clean, tracks_clean.album_rowid == albums_clean.album_rowid, \"left\")\n",
+    "    .drop(albums_clean[\"album_rowid\"])                # drop duplicate album_rowid\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "dedup-tracks",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Deduplicate tracks\n",
+    "# A track with multiple artists creates multiple rows after the join\n",
+    "# To fix this collapse to one row per track_id using agg\n",
+    "\n",
+    "df_clean = main_df.groupBy(\"track_id\").agg(\n",
+    "    F.first(\"track_name\").alias(\"track_name\"),\n",
+    "    F.first(\"name\").alias(\"artist_name\"),             # primary artist name\n",
+    "    F.first(\"popularity\").alias(\"popularity\"),         # track popularity (our target)\n",
+    "    F.max(\"followers_total\").alias(\"followers_total\"), # take the most-followed artist\n",
+    "    F.max(\"artist_popularity\").alias(\"artist_popularity\"),\n",
+    "    F.first(\"album_popularity\").alias(\"album_popularity\"),\n",
+    "    F.first(\"total_tracks\").alias(\"total_tracks\"),\n",
+    "    F.first(\"track_duration\").alias(\"track_duration\"),\n",
+    "    F.first(\"explicit\").alias(\"explicit\"),\n",
+    "    *[F.first(c).alias(c) for c in audio_cols]        # all audio features\n",
+    ")\n",
+    "\n",
+    "# Drop rows missing the target or track id\n",
+    "df_clean = df_clean.na.drop(subset=[\"popularity\", \"track_id\"])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-preprocessing",
+   "metadata": {},
+   "source": [
+    "## 5. Preprocessing (Spark MLlib)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "feature-eng",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Feature engineering\n",
+    "# log1p(followers) compresses the huge range of follower counts (0 to 80M+)\n",
+    "\n",
+    "df_clean = df_clean.withColumn(\"log_followers\", F.log1p(F.col(\"followers_total\")))\n",
+    "\n",
+    "# Interaction feature: energy * danceability captures \"hype\" tracks\n",
+    "df_clean = df_clean.withColumn(\"energy_dance\", F.col(\"energy\") * F.col(\"danceability\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "impute-demo",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "+---------------+-----+------------+------+-------------------+---------+----------------+------------------+\n",
+      "|followers_total|tempo|danceability|energy|followers_total_imp|tempo_imp|danceability_imp|energy_imp        |\n",
+      "+---------------+-----+------------+------+-------------------+---------+----------------+------------------+\n",
+      "|1000.0         |120.0|NULL        |0.8   |1000.0             |120.0    |0.65            |0.8               |\n",
+      "|NULL           |130.0|0.65        |NULL  |2.6167E7           |130.0    |0.65            |0.7999999999999999|\n",
+      "|500000.0       |NULL |0.55        |0.7   |500000.0           |120.0    |0.55            |0.7               |\n",
+      "|7.8E7          |110.0|0.75        |0.9   |7.8E7              |110.0    |0.75            |0.9               |\n",
+      "+---------------+-----+------------+------+-------------------+---------+----------------+------------------+\n",
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Imputer for missing values\n",
+    "\n",
+    "from pyspark.ml.feature import Imputer\n",
+    "from pyspark.sql import Row\n",
+    "\n",
+    "toy_data = spark.createDataFrame([\n",
+    "    Row(followers_total=1000.0,     tempo=120.0, danceability=None, energy=0.80),\n",
+    "    Row(followers_total=None,       tempo=130.0, danceability=0.65, energy=None),\n",
+    "    Row(followers_total=500000.0,   tempo=None,  danceability=0.55, energy=0.70),\n",
+    "    Row(followers_total=78000000.0, tempo=110.0, danceability=0.75, energy=0.90),\n",
+    "])\n",
+    "\n",
+    "demo_cols = [\"followers_total\", \"tempo\", \"danceability\", \"energy\"]\n",
+    "imputer_demo = Imputer(\n",
+    "    inputCols=demo_cols,\n",
+    "    outputCols=[c + \"_imp\" for c in demo_cols]\n",
+    ").setStrategy(\"mean\")  # replace nulls with column mean\n",
+    "\n",
+    "imputer_demo.fit(toy_data).transform(toy_data).show(truncate=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "fillna",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Handle missing values on real data\n",
+    "# Fill nulls with 0 for all numeric feature columns\n",
+    "# missing audio features = track has no audio data, fill as 0\n",
+    "\n",
+    "numeric_cols_full = [\n",
+    "    \"followers_total\", \"artist_popularity\", \"album_popularity\", \"total_tracks\",\n",
+    "    \"track_duration\", \"explicit\", \"log_followers\", \"energy_dance\"\n",
+    "] + audio_cols\n",
+    "\n",
+    "df_clean = df_clean.fillna(0, subset=numeric_cols_full)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "assemble-normalize",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Preprocessed rows: 1,278,282\n",
+      "+--------------------+--------------------+--------------------+----------+--------------------+\n",
+      "|            track_id|          track_name|         artist_name|popularity|            features|\n",
+      "+--------------------+--------------------+--------------------+----------+--------------------+\n",
+      "|0000RM7QYBRAsuFAQ...|             Mo n Me|           Modd Jobs|         0|(21,[0,3,4,6],[5....|\n",
+      "|0001qtVaca5vVqHv0...|               Arena|         Kronnospace|         0|(21,[0,1,3,4,6],[...|\n",
+      "|000BJtGc0SLMN5ixU...|   Trịnh Vương Maria|          Thanh Hoài|         0|(21,[0,1,2,3,4,6]...|\n",
+      "|000Wdim8xmdzFdAds...|Emotional Intelli...|Wave Particle Sin...|         0|(21,[0,1,3,4,6],[...|\n",
+      "|000XiFdhd8fypmIvU...|       Escaped Pulse|      Spiritual Yoga|         0|(21,[0,1,3,4,6],[...|\n",
+      "+--------------------+--------------------+--------------------+----------+--------------------+\n",
+      "only showing top 5 rows\n",
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "from pyspark.ml.feature import VectorAssembler, Normalizer\n",
+    "\n",
+    "# All numeric features \n",
+    "feature_cols = [\n",
+    "    \"followers_total\", \"artist_popularity\", \"album_popularity\", \"total_tracks\",\n",
+    "    \"track_duration\", \"explicit\", \"log_followers\", \"energy_dance\"\n",
+    "] + audio_cols\n",
+    "\n",
+    "# VectorAssembler combines all feature columns into a single vector column\n",
+    "assembler = VectorAssembler(\n",
+    "    inputCols=feature_cols,\n",
+    "    outputCol=\"features_raw\",\n",
+    "    handleInvalid=\"keep\"  # keep rows with remaining nulls rather than dropping\n",
+    ")\n",
+    "\n",
+    "# Normalizer scales each row's feature vector to unit norm (L2)\n",
+    "normalizer = Normalizer(inputCol=\"features_raw\", outputCol=\"features\", p=2)\n",
+    "\n",
+    "# Apply assembler and normalizer\n",
+    "df_assembled = assembler.transform(df_clean)\n",
+    "df_final = normalizer.transform(df_assembled).select(\n",
+    "    \"track_id\", \"track_name\", \"artist_name\", \"popularity\", \"features\"\n",
+    ")\n",
+    "\n",
+    "# Cache so train/val/test splits don't recompute the full join and clean process\n",
+    "df_final = df_final.cache()\n",
+    "row_count = df_final.count()  # triggers caching\n",
+    "print(f\"Preprocessed rows: {row_count:,}\")\n",
+    "df_final.show(5, truncate=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-split",
+   "metadata": {},
+   "source": [
+    "## 6. Train / Validation / Test Split"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "split",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Train:      895,418\n",
+      "Validation: 191,376\n",
+      "Test:       191,488\n"
+     ]
+    }
+   ],
+   "source": [
+    "# 70% train, 15% validation, 15% test\n",
+    "\n",
+    "train_df, val_df, test_df = df_final.randomSplit([0.7, 0.15, 0.15], seed=42)\n",
+    "\n",
+    "print(f\"Train:      {train_df.count():,}\")\n",
+    "print(f\"Validation: {val_df.count():,}\")\n",
+    "print(f\"Test:       {test_df.count():,}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-model",
+   "metadata": {},
+   "source": [
+    "## 7. Distributed Random Forest — Model 1 (Baseline)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "rf-train",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Fitting Model 1 (numTrees=50, maxDepth=8)\n",
+      "Done\n"
+     ]
+    }
+   ],
+   "source": [
+    "from pyspark.ml.regression import RandomForestRegressor\n",
+    "\n",
+    "# Model 1: baseline hyperparameters\n",
+    "# Using regression since popularity is a continuous 0-100 score\n",
+    "\n",
+    "rf = RandomForestRegressor(\n",
+    "    labelCol=\"popularity\",\n",
+    "    featuresCol=\"features\",\n",
+    "    numTrees=50,    \n",
+    "    maxDepth=8,  \n",
+    "    featureSubsetStrategy=\"auto\",\n",
+    "    seed=42\n",
+    ")\n",
+    "\n",
+    "print(\"Fitting Model 1 (numTrees=50, maxDepth=8)\")\n",
+    "rf_model = rf.fit(train_df)\n",
+    "print(\"Done\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-eval",
+   "metadata": {},
+   "source": [
+    "## 8. Evaluation (Train vs Validation vs Test)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "eval",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Model 1: numTrees=50, maxDepth=8\n",
+      "RMSE  train=2.709  val=2.757  test=2.722\n",
+      "R2    train=0.708    val=0.707    test=0.708\n"
+     ]
+    }
+   ],
+   "source": [
+    "from pyspark.ml.evaluation import RegressionEvaluator\n",
+    "\n",
+    "eval_rmse = RegressionEvaluator(labelCol=\"popularity\", predictionCol=\"prediction\", metricName=\"rmse\")\n",
+    "eval_r2   = RegressionEvaluator(labelCol=\"popularity\", predictionCol=\"prediction\", metricName=\"r2\")\n",
+    "\n",
+    "# Predict on all 3 splits\n",
+    "pred_train = rf_model.transform(train_df)\n",
+    "pred_val   = rf_model.transform(val_df)\n",
+    "pred_test  = rf_model.transform(test_df)\n",
+    "\n",
+    "print(\"Model 1: numTrees=50, maxDepth=8\")\n",
+    "print(f\"RMSE  train={eval_rmse.evaluate(pred_train):.3f}  val={eval_rmse.evaluate(pred_val):.3f}  test={eval_rmse.evaluate(pred_test):.3f}\")\n",
+    "print(f\"R2    train={eval_r2.evaluate(pred_train):.3f}    val={eval_r2.evaluate(pred_val):.3f}    test={eval_r2.evaluate(pred_test):.3f}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "sample-predictions",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "TRAIN examples\n",
+      "+----------+---------------+----------+-------------------+\n",
+      "|track_name|artist_name    |popularity|prediction         |\n",
+      "+----------+---------------+----------+-------------------+\n",
+      "|          |Various Artists|0         |0.5423023018458281 |\n",
+      "|          |Various Artists|0         |1.096143831089155  |\n",
+      "|          |Various Artists|0         |1.1987800680647311 |\n",
+      "|          |Various Artists|0         |0.6043595953184664 |\n",
+      "|          |Various Artists|0         |1.096143831089155  |\n",
+      "|          |Various Artists|0         |0.4512086752807267 |\n",
+      "|          |Various Artists|0         |0.5198653841678383 |\n",
+      "|          |Various Artists|0         |0.37898768299582253|\n",
+      "|          |Various Artists|0         |1.096143831089155  |\n",
+      "|          |Various Artists|0         |1.096143831089155  |\n",
+      "+----------+---------------+----------+-------------------+\n",
+      "only showing top 10 rows\n",
+      "\n",
+      "VALIDATION examples\n",
+      "+----------+---------------+----------+-------------------+\n",
+      "|track_name|artist_name    |popularity|prediction         |\n",
+      "+----------+---------------+----------+-------------------+\n",
+      "|          |Various Artists|0         |0.5241860480125701 |\n",
+      "|          |Various Artists|0         |0.44429845727853257|\n",
+      "|          |Various Artists|0         |0.44429845727853257|\n",
+      "|          |Various Artists|0         |0.44429845727853257|\n",
+      "|          |Various Artists|0         |0.3084082152645725 |\n",
+      "|          |Various Artists|0         |1.096143831089155  |\n",
+      "|          |Various Artists|0         |0.5198653841678383 |\n",
+      "|          |Various Artists|0         |0.5899736720510341 |\n",
+      "|          |Various Artists|0         |1.096143831089155  |\n",
+      "|          |Various Artists|0         |0.3707428023609199 |\n",
+      "+----------+---------------+----------+-------------------+\n",
+      "only showing top 10 rows\n",
+      "\n",
+      "TEST examples\n",
+      "+----------+---------------+----------+-------------------+\n",
+      "|track_name|artist_name    |popularity|prediction         |\n",
+      "+----------+---------------+----------+-------------------+\n",
+      "|          |Various Artists|0         |0.4512086752807267 |\n",
+      "|          |Various Artists|0         |0.4512086752807267 |\n",
+      "|          |Various Artists|0         |0.44429845727853257|\n",
+      "|          |Various Artists|0         |1.096143831089155  |\n",
+      "|          |Various Artists|0         |1.096143831089155  |\n",
+      "|          |Various Artists|0         |1.096143831089155  |\n",
+      "|          |Various Artists|0         |1.1260001150378365 |\n",
+      "|          |Various Artists|0         |0.37898768299582253|\n",
+      "|          |Various Artists|0         |0.5241860480125701 |\n",
+      "|          |Various Artists|0         |0.502111287234105  |\n",
+      "+----------+---------------+----------+-------------------+\n",
+      "only showing top 10 rows\n",
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "cols_to_show = [\"track_name\", \"artist_name\", \"popularity\", \"prediction\"]\n",
+    "\n",
+    "print(\"TRAIN examples\")\n",
+    "pred_train.select(*cols_to_show).orderBy(\"track_name\").show(10, truncate=False)\n",
+    "\n",
+    "print(\"VALIDATION examples\")\n",
+    "pred_val.select(*cols_to_show).orderBy(\"track_name\").show(10, truncate=False)\n",
+    "\n",
+    "print(\"TEST examples\")\n",
+    "pred_test.select(*cols_to_show).orderBy(\"track_name\").show(10, truncate=False)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-model2",
+   "metadata": {},
+   "source": [
+    "## 9. Hyperparameter Comparison — Model 2"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "rf-model2",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Fitting Model 2 (numTrees=100, maxDepth=12)\n",
+      "Done\n",
+      "Model 2: numTrees=100, maxDepth=12\n",
+      "RMSE  train=2.504  val=2.587  test=2.560\n",
+      "R2    train=0.751    val=0.742    test=0.742\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Model 2: deeper trees and more trees to test for overfitting\n",
+    "\n",
+    "rf2 = RandomForestRegressor(\n",
+    "    labelCol=\"popularity\",\n",
+    "    featuresCol=\"features\",\n",
+    "    numTrees=100,\n",
+    "    maxDepth=12,\n",
+    "    featureSubsetStrategy=\"auto\",\n",
+    "    seed=42\n",
+    ")\n",
+    "\n",
+    "print(\"Fitting Model 2 (numTrees=100, maxDepth=12)\")\n",
+    "rf_model2 = rf2.fit(train_df)\n",
+    "print(\"Done\")\n",
+    "\n",
+    "pred_train2 = rf_model2.transform(train_df)\n",
+    "pred_val2   = rf_model2.transform(val_df)\n",
+    "pred_test2  = rf_model2.transform(test_df)\n",
+    "\n",
+    "print(\"Model 2: numTrees=100, maxDepth=12\")\n",
+    "print(f\"RMSE  train={eval_rmse.evaluate(pred_train2):.3f}  val={eval_rmse.evaluate(pred_val2):.3f}  test={eval_rmse.evaluate(pred_test2):.3f}\")\n",
+    "print(f\"R2    train={eval_r2.evaluate(pred_train2):.3f}    val={eval_r2.evaluate(pred_val2):.3f}    test={eval_r2.evaluate(pred_test2):.3f}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-feature-importance",
+   "metadata": {},
+   "source": [
+    "## 10. Feature Importance"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "feature-importance",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Feature importances (Model 1):\n",
+      "          feature  importance\n",
+      " album_popularity    0.620257\n",
+      "     total_tracks    0.213915\n",
+      "   track_duration    0.062000\n",
+      "  followers_total    0.048010\n",
+      "artist_popularity    0.029234\n",
+      "    log_followers    0.022796\n",
+      "         explicit    0.003787\n",
+      "           energy    0.000000\n",
+      "         liveness    0.000000\n",
+      " instrumentalness    0.000000\n",
+      "     acousticness    0.000000\n",
+      "      speechiness    0.000000\n",
+      "         loudness    0.000000\n",
+      "            tempo    0.000000\n",
+      "     danceability    0.000000\n",
+      "             mode    0.000000\n",
+      "              key    0.000000\n",
+      "   time_signature    0.000000\n",
+      "audio_duration_ms    0.000000\n",
+      "     energy_dance    0.000000\n",
+      "          valence    0.000000\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Feature importances from Model 1\n",
+    "# Higher value = more useful for predicting popularity\n",
+    "\n",
+    "import pandas as pd\n",
+    "\n",
+    "fi_df = pd.DataFrame({\n",
+    "    \"feature\": feature_cols,\n",
+    "    \"importance\": rf_model.featureImportances.toArray()\n",
+    "}).sort_values(\"importance\", ascending=False)\n",
+    "\n",
+    "print(\"Feature importances (Model 1):\")\n",
+    "print(fi_df.to_string(index=False))"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.6"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
