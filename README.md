@@ -227,3 +227,14 @@ The model struggles with extremely popular songs so moving forward we would want
 
 ## Distributed Computation Benefits:
 Distributed computing is necessary due to the Spotify dataset being extremely large; the amount of rows of data is well into the millions. With such a large dataset and a computer's limited memory, it would take significantly longer to perform any assessments on the data. By using Spark, we are able to distribute computation across multiple executors which helps reduce runtime during training. Distributed computing helps expand a system's capacity since more nodes are available for computation. If a node fails, other nodes are able to continue the operation since the workload is divided amongst many processors, allowing for parallel efficient processing. 
+
+## Speedup Analysis
+1. Baseline Measurement: 1 executor ~19 minutes and 45 seconds to run model training
+2. Scaled Measurement: 8 executors  ~4 minutes and 30 seconds to run model training
+3. Calculate Metrics: Speedup
+4. Analyze:
+
+| Executors | Time (sec) | Speedup | Efficiency |
+|---|---|---|---|
+| 1 | 1185 | 1x | 100% |
+| 8 | 270 | 4.39x | 54.9% |
