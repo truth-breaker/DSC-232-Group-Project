@@ -126,7 +126,7 @@ Duration vs Popularity
 * Most popular tracks fall between 2–5 minutes
 
 Full code and visualizations are available in:
-Spotify\_Popularity\_Explorer.ipynb
+Spotify_Popularity_Explorer.ipynb
 
 ***
 
