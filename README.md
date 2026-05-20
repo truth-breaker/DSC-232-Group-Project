@@ -1,12 +1,12 @@
 
-## DSC-232-Group-Project
-
-# Question 1:
+# DSC-232-Group-Project
+# Project 2: Data Analysis
+## Question 1:
 A. Github ID set up for each team member  
 B. Github repository set for the team  
 C. https://www.kaggle.com/datasets/lordpatil/spotify-metadata-by-annas-archive
 
-# Question 2:
+## Question 2:
 A. Set up and synced our access and expanse accounts. Shared folder added that is accessible to every group member. Group members added each other's workspace so we can access each others progress. Within the hosted jupyter notebook, dataset was uploaded using Kaggle API and then unzipped; dataset was then explored to answer following questions.  
 
 B. Number of Cores: 8  
@@ -19,7 +19,7 @@ Executor Memory = (128-2)/7 =18
 D. 
 <img width="512" height="303" alt="unnamed" src="https://github.com/user-attachments/assets/44f30d44-c16b-4bf7-b8d5-c7535d6b1e7c" />
 
-# Question 3:
+## Question 3:
 A. The total amount of observations is 792,244,463. This data was aggregated into the spotify_clean_parquet folder.  
 
 B. The data is broken up into 7 subsets tables: artists, artist_genre, artist_images, artist_albums, available markets, albums, album_images, tracks, and track_artist. Each table contains columns defining the metadata for each topic.   
@@ -38,8 +38,8 @@ Artist_albums - missing data in the index_in_album column
 Albums - missing data in the external_id_upc, copyright_c, copyright_p, and external_id_amgid  
 The missing data details sourcing/ownership of certain tracks. The lack of this qualitative data isn’t concerning since it isn’t relevant to our research. The lack of external_id_isrc values can lead to issues when linking data from table to table but it seems to only apply to unique values. The amount of null values for this column is less than 0.01% of the total data; with such a tiny percentage of data missing we feel comfortable moving forward with this dataset.  
 
-# Question 4:
-## Data Plots
+## Question 4:
+### Data Plots
 
 a. Created visualizations using Spark aggregations and matplotlib/seaborn.  
 b. Plotted data with bar charts (top artists by popularity, colored by genre), histograms (track popularity distribution), and scatter plots (duration vs popularity).  
@@ -53,7 +53,7 @@ c. Each plot is explained below with insights:
 d. For image data, plotted the distribution of album image sizes and included sample album covers.
 
 **See full code and visualizations in [Spotify_Popularity_Explorer.ipynb](./Spotify_Popularity_Explorer.ipynb).**
-# Question 5:
+## Question 5:
 
 ## Preprocessing Plan
 
