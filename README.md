@@ -82,7 +82,9 @@ The dataset may be skewed to more popular artists and tracks which wouldn’t re
 # Project 3: Fitting Analysis
 ## Model Fitting:
 For milestone 3, we tested 2 two random forest models with varying hyperparameters; the varying parameters for each model are numTrees and maxDepth. In the first iteration we set numTrees to 50 and maxDepth to 8 and in the second iteration numTrees to 100 and maxDepth to 12. Both the models showed balance on the fitting graph and only had a little overfitting but there was still a difference in results between the two models. The parameters directly affected the learning abilities of the random forest model.
+
 ** See full code and visualizations in [Part3_Random_Forest.ipynb](./Part3_Random_Forest.ipynb) **
+
 ## Model 1 Overview:
 For our first iteration, we had a relatively stable performance for the training, validation, and test dataset. When testing the training data, the predictions were typically off by 2.709 points from the actual value which is not a severe difference. When tested against the test dataset, the predictions were off by 2.722 points which was quite similar to the initial training dataset. This meant the model was overall good for generalization and was only slightly overfitting the results. The R2 value of 0.71 shows that the model was able to account for roughly 70% of the variance in Spotify track popularity. The model is able to capture relationships between artist popularity, album popularity, and follower count. Though 70% of variance in the model was captured, it’s important to note the 30% that wasn’t explained; the model struggled to predict popularity for extremely popular songs, it predicted their values inaccurately by predicting their value to be closer to average popularity range established by the previous values.  
 
