@@ -231,8 +231,8 @@ Distributed computing is necessary due to the Spotify dataset being extremely la
 ## Speedup Analysis
 1. Baseline Measurement: 1 executor ~19 minutes and 45 seconds to run model training
 2. Scaled Measurement: 8 executors  ~4 minutes and 30 seconds to run model training
-3. Calculate Metrics: Shown in table
-4. Analyze: Our initial measured speedup was 4.39x when the amount of executors was 8. Using Amdahl’s law S(n)= 1/(1-p)+(p/n) and applying n=8 and S(8) = 4.39, the parallelizable fraction is 0.8825
+3. Calculate Metrics: Shown in table below.
+4. Analyze: The theoretical maximum for our model is 8x since we have 8 executor and the measured speedup we calculated is 4.39. Comparing the measured speedup to the theoretical maximum (4.39/8=0.55), identifies that we get only 55% of the expected performance. Applying Amdahl's law using the variables we have available, S(n)= 1/(1-p)+(p/n) with n=8 and S(8) = 4.39, the fraction of code that is parallelizable is 88% (p=0.8825). Even though our model uses 8 executors, only 88% of the computation can be parallelized which limits the achievable speed up to only 4.39x rather than the theoretical ideal maximum of 8x. 
 
 | Executors | Time (sec) | Speedup | Efficiency |
 |---|---|---|---|
