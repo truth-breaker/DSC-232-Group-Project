@@ -79,7 +79,7 @@ The dataset may be skewed to more popular artists and tracks which wouldn’t re
 - `withColumn()` to create new features or transform existing columns.
 - Spark MLlib transformers (e.g., `StringIndexer`, `OneHotEncoder`, `MinMaxScaler`) for encoding and scaling.
 
-# Fitting Analysis
+# Project 3: Fitting Analysis
 ## Model Fitting:
 For milestone 3, we tested 2 two random forest models with varying hyperparameters; the varying parameters for each model are numTrees and maxDepth. In the first iteration we set numTrees to 50 and maxDepth to 8 and in the second iteration numTrees to 100 and maxDepth to 12. Both the models showed balance on the fitting graph and only had a little overfitting but there was still a difference in results between the two models. The parameters directly affected the learning abilities of the random forest model.
 
