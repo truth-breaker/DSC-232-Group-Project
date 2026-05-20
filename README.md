@@ -79,3 +79,22 @@ The dataset may be skewed to more popular artists and tracks which wouldn’t re
 - `withColumn()` to create new features or transform existing columns.
 - Spark MLlib transformers (e.g., `StringIndexer`, `OneHotEncoder`, `MinMaxScaler`) for encoding and scaling.
 
+# Fitting Analysis
+## Model Fitting:
+For milestone 3, we tested 2 two random forest models with varying hyperparameters; the varying parameters for each model are numTrees and maxDepth. In the first iteration we set numTrees to 50 and maxDepth to 8 and in the second iteration numTrees to 100 and maxDepth to 12. Both the models showed balance on the fitting graph and only had a little overfitting but there was still a difference in results between the two models. The parameters directly affected the learning abilities of the random forest model.
+
+## Model 1 Overview:
+For our first iteration, we had a relatively stable performance for the training, validation, and test dataset. When testing the training data, the predictions were typically off by 2.709 points from the actual value which is not a severe difference. When tested against the test dataset, the predictions were off by 2.722 points which was quite similar to the initial training dataset. This meant the model was overall good for generalization and was only slightly overfitting the results. The R2 value of 0.71 shows that the model was able to account for roughly 70% of the variance in Spotify track popularity. The model is able to capture relationships between artist popularity, album popularity, and follower count. Though 70% of variance in the model was captured, it’s important to note the 30% that wasn’t explained; the model struggled to predict popularity for extremely popular songs, it predicted their values inaccurately by predicting their value to be closer to average popularity range established by the previous values.  
+
+## Model 2 Overview:
+For the second iteration, the number of trees and depth increased to try and approve model error. There was an improvement in training data predictions in comparison to our first iteration as the RMSE was 2.504; showing that the model became slightly more accurate. Similarly, the test RMSE and R2 value showed general improvement, with the test error value being 2.560 and R2 of 0.74. The variation in the hyperparameters showed overall improvements in results for model 2. Model 2 has better predictive performance as it captures more nonlinear relationships of the Spotify dataset than model 1. By doubling the number of trees, the model was about to learn more about the nonlinear relationship between different features while the increase in the number of trees improved stability and reduced variance.
+
+# Conclusion Section
+## Model Conclusions:
+Moving forward, since model 2 showed the most amount of accuracy and had the lowest amount of error, it would be the most ideal to use.  Having more trees and increasing the depth allows the model to learn more about the nonlinear relationships that are present in the data set.
+
+## Future Improvements of the Model:
+The model struggles with extremely popular songs so moving forward we would want to run a model that could handle improving the accuracy for these certain cases. One possible approach involves using the gradient boosting model since this type of model performs well on structured data. XGBoost models are more effective at understanding relationships that are nonlinear and could improve predictions for extremely popular songs. 
+
+## Distributed Computation Benefits:
+Distributed computing is necessary due to the Spotify dataset being extremely large; the amount of rows of data is well into the millions. With such a large dataset and a computer's limited memory, it would take significantly longer to perform any assessments on the data. By using Spark, we are able to distribute computation across multiple executors which helps reduce runtime during training. Distributed computing helps expand a system's capacity since more nodes are available for computation. If a node fails, other nodes are able to continue the operation since the workload is divided amongst many processors, allowing for parallel efficient processing. 
