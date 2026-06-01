@@ -350,7 +350,7 @@ We learned that while distributed computing makes big data processing tasks much
 #### How Distributed Computing Changed Our Approach
 If we were attempting this project on a single machine we would have been forced to use a much smaller sample and lose the opportunity to gain insights from the 256M tracks, 15M artists, and 58M albums. Distributed computing changed our approach by giving us a variety of options and try different joins, deduplication, feature engineering, scaling, and model training. This was possible because Spark allowed the processes to run across multiple executors.
 
-#### What We Would Explore With More Time
-
+#### What We Would Explore With More Time/Resources
+With more time and resources, we would train on the full dataset rather than a 0.5% sample, add genre as a categorical feature via StringIndexer + OneHotEncoder to see how results vary across different music styles, remove `album_popularity` and retrain to test how the distributions change without the primary affecting feature, and perform a full hyperparameter grid search on XGBoost.
 
 ### Statement of Collaboration
