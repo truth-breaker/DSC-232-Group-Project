@@ -352,6 +352,7 @@ The strong right skew we saw in the popularity field makes sense and seems consi
 Due to the Expanse executor disk filling up when we tried to perform join operations on the full 256M rows dataset, we had to train on a 0.5% sample instead. This left us with 1.25M rows which is still a significant size to use for the model and is expected to be statistically diverse enough (although ideally the full dataset would be used). The decision to sample before joins rather than after was critical because sampling after joins still requires shuffling 256M rows, which causes a disk spill once again.
 
 #### Model 1
+Both RF models show near-identical train and test RMSE, indicating good generalization. However, the feature importance breakdown brings up an issue: `album_popularity` alone drives 62% of predictions while all 13 audio features contribute nothing. The model learned that tracks on popular albums tend to be popular, which is true but not a new observation for our project. This also raises a potential data leakage concern: a track's popularity contributes to its album's aggregate popularity score, meaning it may be partially predicting popularity from a proxy of itself. The sample predictions support this concern: globally iconic tracks like "Grenade" by Bruno Mars (actual: 82, predicted: 17.3) are drastically underestimated because the model has not learned what makes specific tracks stand out.
 
 #### Model 2
 
@@ -359,6 +360,7 @@ Due to the Expanse executor disk filling up when we tried to perform join operat
 ### Conclusion
 
 #### Model 1
+For our first model we tested two Random Forest Regressors with varying hyperparameters. Model 1a (50 trees, depth 8) had stable performance across train, validation, and test sets with RMSE near 2.72 and R² of 0.71, capturing roughly 70% of the variance in track popularity. Model 1b (100 trees, depth 12) improved on this with RMSE of 2.560 and R² of 0.742. Both models are slightly on the underfitting side with near-identical train/test gaps indicating good generalization. However, the model's heavy reliance on `album_popularity` suggests it is not learning what truly drives individual track popularity. Future improvements include adding genre encoding, release year, and investigating the data leakage caused by `album_popularity`.
 
 #### Model 2
 
@@ -373,5 +375,7 @@ With more time and resources, we would train on the full dataset rather than a 0
 
 ### Statement of Collaboration
 **Heta Joshi**
+
 **Dennise Arenas** 
+
 **Zytal Lenus**
