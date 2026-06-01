@@ -143,7 +143,8 @@ Individual explained variance ratio per principal component. PC1 alone explains 
 Cumulative explained variance showing that 99% of variance is captured within the first 2 components, far exceeding the 90% threshold (dashed line) at PC1. This was used to justify selecting k=1 for the PCA model.
 
 **Figure 7: Confusion Matrix (PCA + XGBoost Model)**
-<img width="568" height="511" alt="confmtric" src="https://github.com/user-attachments/assets/ee62b0e4-88e8-4831-91f7-1b92f9d8db12" />
+
+<img width="568" height="511" alt="confmtric" src="https://github.com/user-attachments/assets/1ceb0bf3-f454-4848-b91c-701c67578088" />
 
 Confusion matrix for the PCA + XGBoost model using a popularity threshold of 70. The model predicted all 191,743 test observations as "not popular," with 0 true positives. This confirms severe underfitting: the model generalized all predictions to a low range and could not distinguish high-popularity tracks.
 
