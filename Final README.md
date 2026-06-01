@@ -99,7 +99,6 @@ Applying Amdahl's Law (`S(n) = 1 / ((1−p) + p/n)` with n=8, S=4.39): approxima
 
 ## Written Report
 
-
 ### Introduction
 Since the early 2000s, music streaming has become the primary method through which songs become popular, and specifically in recent years with recommendation algorithms advancing rapidly, artists rely on trends to ensure their music is pushed to the public as much as possible. On Spotify, a track’s popularity score on a scale of 0-100 represents its listening activity relative to all other tracks on the platform, and is crucial to influencing the algorithms that control recommendations, top charts, and artist revenue. This popularity score is relevant not only to the artist, but also their brand label, radio stations, and other artists using their competitors to study trends and experiment with what generates a “hit”. 
 
@@ -370,6 +369,9 @@ We learned that while distributed computing makes big data processing tasks much
 If we were attempting this project on a single machine we would have been forced to use a much smaller sample and lose the opportunity to gain insights from the 256M tracks, 15M artists, and 58M albums. Distributed computing changed our approach by giving us a variety of options and try different joins, deduplication, feature engineering, scaling, and model training. This was possible because Spark allowed the processes to run across multiple executors.
 
 #### What We Would Explore With More Time/Resources
-With more time and resources, we would train on the full dataset rather than a 0.5% sample, add genre as a categorical feature via StringIndexer + OneHotEncoder to see how results vary across different music styles, remove `album_popularity` and retrain to test how the distributions change without the primary affecting feature, and perform a full hyperparameter grid search on XGBoost.
+With more time and resources, we would train on the full dataset rather than a 0.5% sample, add genre as a categorical feature via StringIndexer + OneHotEncoder to see how results vary across different music styles, remove `album_popularity` and retrain to test how the distributions change without the primary affecting feature, and perform a full hyperparameter grid search on XGBoost to find which combinations result in the best performance.
 
 ### Statement of Collaboration
+**Heta Joshi**
+**Dennise Arenas** 
+**Zytal Lenus**
