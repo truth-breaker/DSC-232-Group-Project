@@ -126,6 +126,13 @@ Bar graph showing the top 10 artists by maximum track popularity present in the 
 <img width="1500" height="750" alt="fig3_duration_vs_popularity" src="https://github.com/user-attachments/assets/70c70f7c-5417-46a0-b15c-847c008883bd" />
 This scatter plot shows track duration vs popularity. The highest-popularity tracks cluster between 2–5 minutes, consistent with streaming platform preferences for shorter, more replayable content. Beyond this, popularity drops significantly for tracks longer than 6 minutes.
 
+**Figure 4: Random Forest Feature Importances (Model 1)**
+<img width="1500" height="1200" alt="fig4_feature_importance" src="https://github.com/user-attachments/assets/7f5f4250-bcc0-4ea6-8698-20fac3a63a79" />
+
+Bar graph showing feature importances from Model 1a: `album_popularity` (62%) and `total_tracks` (21%) dominate predictions, while all 13 audio features contribute 0 importance. This suggests the model learned album-level patterns rather than track-level audio patterns.
+
+
+
 
 ### Methods
 
