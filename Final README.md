@@ -231,6 +231,100 @@ xgb.fit(X_train, y_train)
 
 ### Results
 
+#### Data Exploration
+- Tracks: 256,039,007 rows, Artists: 15,430,442 rows, Albums: 58,590,982 rows
+- Missing values <0.01% in all critical columns
+- Popularity heavily right-skewed: majority of tracks have popularity near 0
+- Most popular tracks between 2–5 minutes duration
+
+#### Preprocessing
+After joining and deduplication on the 0.5% sample, final dataset: ~870,000 unique tracks. Left joins preserved all sampled tracks regardless of missing audio or artist data.
+
+#### Model 1 Results
+
+| Model | numTrees | maxDepth | RMSE Train | RMSE Val | RMSE Test | R² Test |
+|---|---|---|---|---|---|---|
+| 1a | 50 | 8 | 2.709 | 2.757 | 2.722 | 0.708 |
+| 1b | 100 | 12 | 2.504 | 2.587 | 2.560 | 0.742 |
+
+**Feature Importances (Model 1a):**
+
+| Feature | Importance |
+|---|---|
+| album_popularity | 62.0% |
+| total_tracks | 21.4% |
+| track_duration | 6.2% |
+| followers_total | 4.8% |
+| artist_popularity | 2.9% |
+| log_followers | 2.3% |
+| explicit | 0.4% |
+| All 13 audio features | 0.0% |
+
+**Sample Predictions (Model 1b, test set):**
+
+| Track | Artist | Actual | Predicted |
+|---|---|---|---|
+| Grenade | Bruno Mars | 82 | 17.3 |
+| Running Wild | Jin | 78 | 22.5 |
+| MIENTRAS ME CURO DEL CORA | KAROL G | 78 | 16.9 |
+| River | Leon Bridges | 77 | 24.0 |
+| Radio/Video | System Of A Down | 71 | 23.0 |
+
+
+#### Model 2 Results
+
+**PCA Explained Variance:**
+
+| Component | Explained Variance |
+|---|---|
+| PC1 | ~97% |
+| PC2 | ~2% |
+| PC3+ | ~0% each |
+
+**Model 2a — PCA + XGBoost:**
+
+| Split | RMSE | R² |
+|---|---|---|
+| Validation | 4.86 | — |
+| Test | 4.87 | 0.07 |
+
+Confusion matrix (threshold ≥ 70 = popular): 191,735 true negatives, 8 false negatives, 0 true positives, 0 false positives. The model predicted every track as "not popular."
+
+**Model 2b — XGBoost without PCA:**
+
+| Split | RMSE | R² |
+|---|---|---|
+| Train | 1.27 | 0.936 |
+| Test | 2.16 | 0.810 |
+
+**Sample Predictions (Model 2b, test set):**
+
+| Track | Artist | Actual | Predicted |
+|---|---|---|---|
+| MIENTRAS ME CURO DEL CORA | KAROL G | 78 | 67.2 |
+| Sol solecito caliéntame un poquito | NULL | 66 | 66.2 |
+| Fall Fast in Love | Rod Wave | 64 | 51.5 |
+| Dj Waley Babu (feat. Aastha Gill) | Badshah | 63 | 41.0 |
+| Alone With You | Arz | 63 | 65.9 |
+
+
+**All Models Comparison:**
+
+| Model | Features | RMSE Test | R² Test |
+|---|---|---|---|
+| RF 1a (50 trees, depth 8) | 21 full features | 2.722 | 0.708 |
+| RF 1b (100 trees, depth 12) | 21 full features | 2.560 | 0.742 |
+| PCA + XGBoost (k=1) | 1 component | 4.870 | 0.070 |
+| XGBoost (no PCA) | 21 full features | 2.160 | 0.810 |
+
+#### Speedup Analysis
+
+| Executors | Time (sec) | Speedup | Efficiency |
+|---|---|---|---|
+| 1 | 1185 | 1.00x | 100% |
+| 8 | 270 | 4.39x | 54.9% |
+
+
 ### Discussion
 
 ### Conclusion
