@@ -11,6 +11,12 @@ In this project, we are using a ~190GB dataset of Spotify's complete music archi
 
 ## Notebooks
 
+Milestone 2
+
+Milestone 3
+
+Milestone 4
+
 ## Cluster Configuration
 
 | Resource | Value |
