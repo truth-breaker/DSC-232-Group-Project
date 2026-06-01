@@ -128,11 +128,23 @@ This scatter plot shows track duration vs popularity. The highest-popularity tra
 
 **Figure 4: Random Forest Feature Importances (Model 1)**
 <img width="1500" height="1200" alt="fig4_feature_importance" src="https://github.com/user-attachments/assets/7f5f4250-bcc0-4ea6-8698-20fac3a63a79" />
-
 Bar graph showing feature importances from Model 1a: `album_popularity` (62%) and `total_tracks` (21%) dominate predictions, while all 13 audio features contribute 0 importance. This suggests the model learned album-level patterns rather than track-level audio patterns.
 
+**Figure 5: PCA Explained Variance Ratio by Component (Model 2)**
+<img width="567" height="453" alt="11111" src="https://github.com/user-attachments/assets/c6658753-2e57-404c-adc2-dc40b68de3b9" />
+Individual explained variance ratio per principal component. PC1 alone explains ~97% of the total variance, with all remaining components contributing close to zero. This extreme concentration indicates strong feature correlation: most of the information in the 21-dimensional feature space can be represented in 1 single dimension.
 
+**Figure 6: PCA Cumulative Explained Variance (Model 2)**
+<img width="576" height="453" alt="22222" src="https://github.com/user-attachments/assets/10ceed3b-d083-47e7-a5db-b73bb14e2e71" />
+Cumulative explained variance showing that 99% of variance is captured within the first 2 components, far exceeding the 90% threshold (dashed line) at PC1. This was used to justify selecting k=1 for the PCA model.
 
+**Figure 7: Confusion Matrix (PCA + XGBoost Model)**
+<img width="568" height="511" alt="confmtric" src="https://github.com/user-attachments/assets/ee62b0e4-88e8-4831-91f7-1b92f9d8db12" />
+Confusion matrix for the PCA + XGBoost model using a popularity threshold of 70. The model predicted all 191,743 test observations as "not popular," with 0 true positives. This confirms severe underfitting: the model generalized all predictions to a low range and could not distinguish high-popularity tracks.
+
+**Figure 8: Actual vs Predicted Popularity (XGBoost without PCA)**
+<img width="506" height="358" alt="Screenshot 2026-06-01 at 12 17 43 PM" src="https://github.com/user-attachments/assets/bfe561f6-4edc-4e78-8f88-28accd92f90a" />
+Scatter plot of actual vs predicted popularity for the improved XGBoost model (no PCA) showing most points follow the red diagonal line, indicating strong prediction alignment. The model slightly underestimates high-popularity tracks and slightly overestimates very low ones, a mean-regression effect, but overall achieves a strong performance (R² ~0.81, RMSE ~2.16).
 
 ### Methods
 
