@@ -285,7 +285,7 @@ After joining and deduplication on the 0.5% sample, final dataset: ~870,000 uniq
 
 | Split | RMSE | R² |
 |---|---|---|
-| Validation | 4.86 | — |
+| Validation | 4.86 |  |
 | Test | 4.87 | 0.07 |
 
 Confusion matrix (threshold ≥ 70 = popular): 191,735 true negatives, 8 false negatives, 0 true positives, 0 false positives. The model predicted every track as "not popular."
