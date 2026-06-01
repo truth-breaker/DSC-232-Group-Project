@@ -281,7 +281,7 @@ After joining and deduplication on the 0.5% sample, final dataset: ~870,000 uniq
 | PC2 | ~2% |
 | PC3+ | ~0% each |
 
-**Model 2a — PCA + XGBoost:**
+**Model 2a: PCA + XGBoost:**
 
 | Split | RMSE | R² |
 |---|---|---|
@@ -290,7 +290,7 @@ After joining and deduplication on the 0.5% sample, final dataset: ~870,000 uniq
 
 Confusion matrix (threshold ≥ 70 = popular): 191,735 true negatives, 8 false negatives, 0 true positives, 0 false positives. The model predicted every track as "not popular."
 
-**Model 2b — XGBoost without PCA:**
+**Model 2b: XGBoost without PCA:**
 
 | Split | RMSE | R² |
 |---|---|---|
@@ -327,6 +327,30 @@ Confusion matrix (threshold ≥ 70 = popular): 191,735 true negatives, 8 false n
 
 ### Discussion
 
+#### Data Exploration
+The strong right skew we saw in the popularity field makes sense and seems consistent with what we know about streaming platforms and engagement. Only a small number of tracks actually become a global big hit while the majority of tracks have comparatively low engagement. This skew tells us that a model that frequently predicts a low popularity would actually have a high accuracy rate, making RMSE and R² more informative metrics for evaluation than accuracy alone. This shaped our decision to frame the problem as regression rather than binary classification.
+
+#### Preprocessing
+Due to the Expanse executor disk filling up when we tried to perform join operations on the full 256M rows dataset, we had to train on a 0.5% sample instead. This left us with 1.25M rows which is still a significant size to use for the model and is expected to be statistically diverse enough (although ideally the full dataset would be used). The decision to sample before joins rather than after was critical because sampling after joins still requires shuffling 256M rows, which causes a disk spill once again.
+
+#### Model 1
+
+#### Model 2
+
+
 ### Conclusion
+
+#### Model 1
+
+#### Model 2
+
+#### What We Learned About Big Data Processing
+We learned that while distributed computing makes big data processing tasks much more manageable, they come with their own limitations as well. During part 3, we kept running into a disk spill error and learned that we had to be very intentional about all of our code and even the order in which we execute it. The order of shuffle operations, sampling, and joins made a crucial difference to whether our code was finally able to run at all, and Amdahl's Law confirmed that even with 8 executors we achieved only 4.39x speedup rather than the theoretical 8x, because ~12% of computation is inherently sequential.
+
+#### How Distributed Computing Changed Our Approach
+If we were attempting this project on a single machine we would have been forced to use a much smaller sample and lose the opportunity to gain insights from the 256M tracks, 15M artists, and 58M albums. Distributed computing changed our approach by giving us a variety of options and try different joins, deduplication, feature engineering, scaling, and model training. This was possible because Spark allowed the processes to run across multiple executors.
+
+#### What We Would Explore With More Time
+
 
 ### Statement of Collaboration
