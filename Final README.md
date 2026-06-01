@@ -27,6 +27,21 @@ Executor Memory = (128 - 2) / 7 ≈ 18 GB
 
 ## Milestone 1: Project Setup and Data Understanding
 
+We set up individual SDSC Expanse accounts and created a shared GitHub repository. The dataset was downloaded using the Kaggle API, unzipped, and converted to Parquet format for distributed processing. The dataset contains approximately 792 million rows across 8 tables:
+
+| Table | Description |
+|---|---|
+| Tracks (256M rows) | Track name, duration, popularity, explicit flag |
+| Artists (15M rows) | Artist name, followers, popularity |
+| Albums (58M rows) | Album name, label, release date, popularity |
+| Track_artist | Maps tracks to their artists |
+| Artist_genre | Maps artists to genres |
+| Artist_albums | Maps artists to albums |
+| Available_markets | Country availability per track/album |
+| Audio_features | Audio characteristics per track (tempo, energy, danceability, etc.) |
+
+**Missing data:** Only three tables had any missing values — tracks (preview_url, external_id_isrc), artist_albums (index_in_album), and albums (external_id_upc, copyright fields). All missing values were under 0.01% and none were critical for prediction.
+
 
 ## Milestone 2: Data Exploration and Preprocessing Plan
 
