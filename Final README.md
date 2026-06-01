@@ -60,7 +60,7 @@ All exploration was performed using Spark DataFrames using `.count()`, `df.descr
 
 ## Milestone 3: Preprocessing and Random Forest
 
-Full preprocessing and Model 1 code: [Part3_Random_Forest.ipynb](./Part3_Random_Forest.ipynb)
+Full preprocessing and Model 1 code: [Part3_Random_Forest.ipynb](https://github.com/truth-breaker/DSC-232-Group-Project/blob/Milestone-3/Part3_Random_Forest.ipynb)
 
 ### Preprocessing
 
