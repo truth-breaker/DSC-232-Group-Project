@@ -29,3 +29,98 @@ This problem requires big data and distributed computing because our dataset con
 
 ### Figures
 
+
+### Methods
+
+#### Data Exploration
+
+We loaded 8 Parquet tables from `/expanse/lustre/projects/uci157/darenas/shared/spotify_clean_parquet` into Spark DataFrames. Row counts were computed using `.count()` and null counts using `count(when(col(c).isNull(), c))`. Visualizations were generated using Spark aggregations collected to the driver and rendered with matplotlib.
+
+#### Preprocessing
+
+```python
+# Sample tracks at 0.5% BEFORE joins to prevent shuffle disk spill
+tracks_clean = tracks_clean.sample(False, 0.005, seed=42)
+
+# Audio cleaning
+audio = audio.withColumnRenamed("duration_ms", "audio_duration_ms")
+audio = audio.filter(F.col("null_response").isNull())
+for c in audio_cols:
+    audio = audio.withColumn(c, F.col(c).cast("double"))
+
+# Artist deduplication using window function
+w = Window.partitionBy("name").orderBy(F.desc("followers_total"), F.desc("artist_popularity"))
+artists_clean = artists_clean.withColumn("rank", F.row_number().over(w))\
+    .filter(F.col("rank") == 1).drop("rank")
+
+# 4-way left join
+main_df = (
+    tracks_clean
+    .join(audio, tracks_clean.track_id == audio.track_id, "left")
+    .join(track_artists, tracks_clean.track_rowid == track_artists.track_rowid, "left")
+    .join(artists_clean, track_artists.artist_rowid == artists_clean.artist_rowid, "left")
+    .join(albums_clean, tracks_clean.album_rowid == albums_clean.album_rowid, "left")
+)
+
+# Deduplicate to one row per track
+df_clean = main_df.groupBy("track_id").agg(
+    F.first("track_name").alias("track_name"),
+    F.max("followers_total").alias("followers_total"),
+    ...
+)
+
+# Feature engineering
+df_clean = df_clean.withColumn("log_followers", F.log1p(F.col("followers_total")))
+df_clean = df_clean.withColumn("energy_dance", F.col("energy") * F.col("danceability"))
+
+# Assembly and scaling
+assembler = VectorAssembler(inputCols=feature_cols, outputCol="features_raw", handleInvalid="keep")
+normalizer = Normalizer(inputCol="features_raw", outputCol="features", p=2)
+```
+
+Split: 70% train / 15% validation / 15% test (`seed=42`)
+
+#### Model 1: Distributed Random Forest Regressor
+
+```python
+# Model 1a: baseline
+rf = RandomForestRegressor(labelCol="popularity", featuresCol="features",
+                           numTrees=50, maxDepth=8, featureSubsetStrategy="auto", seed=42)
+
+# Model 1b: increased capacity
+rf2 = RandomForestRegressor(labelCol="popularity", featuresCol="features",
+                            numTrees=100, maxDepth=12, featureSubsetStrategy="auto", seed=42)
+```
+
+Both models evaluated using `RegressionEvaluator` with RMSE and R² on train, validation, and test sets. Feature importances extracted from `rf_model.featureImportances`.
+
+#### Model 2: PCA + XGBoost
+
+**Model 2a: PCA + XGBoost (Ray distributed):**
+```python
+# StandardScaler before PCA
+scaler = StandardScaler(inputCol="features_raw", outputCol="features_scaled",
+                        withMean=False, withStd=True)
+
+# PCA dimensionality reduction
+pca = PCA(k=21, inputCol="features_scaled", outputCol="pca_features")
+pca_model = pca.fit(df_scaled)
+# Explained variance showed k=1 exceeds 90% threshold, selected k=1
+
+# Ray-distributed XGBoost on PCA features
+from xgboost.spark import SparkXGBRegressor
+```
+
+**Model 2b: XGBoost without PCA (improved):**
+```python
+from xgboost import XGBRegressor
+from sklearn.model_selection import train_test_split
+
+pdf = df_no_pca.select("track_id", "track_name", "artist_name",
+                        "popularity", "features_raw").limit(200000).toPandas()
+X = np.vstack(pdf["features_raw"].apply(lambda v: v.toArray()))
+y = pdf["popularity"].values
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+xgb = XGBRegressor()
+xgb.fit(X_train, y_train)
+```
