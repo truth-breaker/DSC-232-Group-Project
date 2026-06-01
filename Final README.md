@@ -10,12 +10,29 @@
 
 ## Cluster Configuration
 
+| Resource | Value |
+|---|---|
+| Number of Cores | 8 |
+| Total Memory | 128 GB |
+| Dataset Size | ~190 GB |
+
+| Parameter          | Value   |
+| ------------------ | ------- |
+| Executor Instances | 7       |
+| Executor Memory    | \~18 GB |
+
+Calculation:
+Executor Instances = 8 - 1 = 7  
+Executor Memory = (128 - 2) / 7 ≈ 18 GB
+
 ## Milestone 1: Project Setup and Data Understanding
+
 
 ## Milestone 2: Data Exploration and Preprocessing Plan
 
 ## Milestone 3: Preprocessing and Random Forest
 
+## Milestone 4: Dimensionality Reduction and XGBoost
 
 ## Written Report
 
@@ -124,3 +141,11 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 xgb = XGBRegressor()
 xgb.fit(X_train, y_train)
 ```
+
+### Results
+
+### Discussion
+
+### Conclusion
+
+### Statement of Collaboration
