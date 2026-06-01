@@ -60,6 +60,41 @@ All exploration was performed using Spark DataFrames using `.count()`, `df.descr
 
 ## Milestone 3: Preprocessing and Random Forest
 
+Full preprocessing and Model 1 code: [Part3_Random_Forest.ipynb](./Part3_Random_Forest.ipynb)
+
+### Preprocessing
+
+To prevent shuffle disk spill on Expanse executor nodes, tracks were sampled at 0.5% before any join operations (~1.25M rows). The full preprocessing pipeline:
+
+- Audio cleaning: renamed `duration_ms` to avoid column collision, filtered null API responses, cast all audio columns to double
+- Artist deduplication: window function to keep the highest-follower row per artist name
+- 4-way left join: tracks × audio × track_artists × artists × albums
+- Track deduplication: `groupBy("track_id").agg()` to collapse multi-artist tracks to one row
+- Missing values: dropped rows missing `track_id` or `popularity`; filled all other numeric nulls with 0
+- Feature engineering: `log_followers` (log1p of follower count), `energy_dance` (energy × danceability)
+- Assembly: `VectorAssembler` combining 21 features; `Normalizer` (L2) for scaling
+- Split: 70% train / 15% validation / 15% test
+
+Final preprocessed dataset: ~870,000 unique tracks.
+
+### Model 1 Results
+
+| Model | numTrees | maxDepth | RMSE Train | RMSE Val | RMSE Test | R² Test |
+|---|---|---|---|---|---|---|
+| 1a | 50 | 8 | 2.709 | 2.757 | 2.722 | 0.708 |
+| 1b | 100 | 12 | 2.504 | 2.587 | 2.560 | 0.742 |
+
+Model 1b is the stronger model — lower error and higher R² with only a small train/val gap indicating minimal overfitting. The increase in trees and depth allowed the model to capture more nonlinear relationships.
+
+### Speedup Analysis
+
+| Executors | Time (sec) | Speedup | Efficiency |
+|---|---|---|---|
+| 1 | 1185 | 1.00x | 100% |
+| 8 | 270 | 4.39x | 54.9% |
+
+Applying Amdahl's Law (`S(n) = 1 / ((1−p) + p/n)` with n=8, S=4.39): approximately 88% of the computation is parallelizable (p=0.8825). The remaining ~12% is sequential; driver coordination, result collection, and cache materialization, limiting the achieved speedup to 4.39x rather than the theoretical 8x maximum.
+
 ## Milestone 4: Dimensionality Reduction and XGBoost
 
 ## Written Report
