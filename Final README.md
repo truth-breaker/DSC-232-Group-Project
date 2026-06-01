@@ -40,10 +40,23 @@ We set up individual SDSC Expanse accounts and created a shared GitHub repositor
 | Available_markets | Country availability per track/album |
 | Audio_features | Audio characteristics per track (tempo, energy, danceability, etc.) |
 
-**Missing data:** Only three tables had any missing values — tracks (preview_url, external_id_isrc), artist_albums (index_in_album), and albums (external_id_upc, copyright fields). All missing values were under 0.01% and none were critical for prediction.
-
+**Missing data:** Only three tables had any missing values: tracks (preview_url, external_id_isrc), artist_albums (index_in_album), and albums (external_id_upc, copyright fields). All missing values were under 0.01% and none were critical for prediction.
 
 ## Milestone 2: Data Exploration and Preprocessing Plan
+
+All exploration was performed using Spark DataFrames using `.count()`, `df.describe().show()`, `df.printSchema()`, `groupBy().agg()`, and `select().distinct().count()`. Key findings:
+
+- Track popularity is heavily right-skewed: most tracks cluster near 0, with only a small fraction reaching high popularity
+- Most popular tracks fall between 2–5 minutes in duration
+- Each artist has exactly 3 images stored (for different screen resolutions)
+- Album and artist image dimensions vary widely, stored in transformed units rather than raw pixels
+
+**Preprocessing plan:**
+- Missing values under 10%: drop rows with missing critical fields, fill others with 0
+- Scaling: StandardScaler/Normalizer for numerical features
+- Encoding: StringIndexer + OneHotEncoder for categorical features
+- Feature engineering: derived features from existing columns
+- Spark operations to use: `dropDuplicates()`, `filter()`, `fillna()`, `groupBy().agg()`, `withColumn()`, `VectorAssembler`, `StringIndexer`, `Normalizer`
 
 ## Milestone 3: Preprocessing and Random Forest
 
