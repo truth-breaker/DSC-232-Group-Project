@@ -382,6 +382,22 @@ If we were attempting this project on a single machine we would have been forced
 #### What We Would Explore With More Time/Resources
 With more time and resources, we would train on the full dataset rather than a 0.5% sample, add genre as a categorical feature via StringIndexer + OneHotEncoder to see how results vary across different music styles, remove `album_popularity` and retrain to test how the distributions change without the primary affecting feature, and perform a full hyperparameter grid search on XGBoost to find which combinations result in the best performance.
 
+## Extra Credit
+#### Implementation
+We implemented an equivalent distributed machine learning and data processing workflow using both Apache Spark and Ray in Milestone. Using PySpark, we trained a distributed random forest regression model on the spotify metadata. The Spark process that was implemented involved distributed parquet loading, preprocessing, and random forest training. In a similar fashion, using Ray data and Ray Train, we implemented a PCA computation using map_batches, feature projection, and XGBoost training using XGBoostTrainer.
+
+#### Performance Comparison
+| Comparison Metrics | Spark Random Forest | Ray PCA + XGBoost |
+|---|---|---|
+| Execution Time (avg of 3 runs) | ~15 seconds | ~610 seconds |
+| Lines of Code | ~120 lines | ~200+ lines |
+|Memory Usage | 25 GB  per executor (7 executors and 25 GB each) | ~171 GB shared (3 workers, 2 CPUs per worker) |
+
+#### Analysis
+Comparing the 2 methods the Spark model runs significantly faster than the PCA + XGBoost model; the Spark method was roughly 39x faster in comparison to Ray. This time difference was expected as the Ray method included computationally intensive processes like the PCA model, data materialization, conversion between the distributed datasets, pandas dataframes, and distributed XGBoost.
+The framework that was easier to implement was Spark. This is because the machine learning library integrates preprocessing, Spark dataframe simplifies joins/transformations, and less manual memory management is necessary. Ray, in comparison, involved more data transformations, materialization, and feature expansion after PCA.
+The framework we would choose depends on the amount of processing power. If we were strictly looking for a model that could train fast, have less implementation complexity, and handle distributed training efficiently than the Spark random forest model is ideal. However if the goal of the model was to produce more complex and accurate results and time wasn’t an issue, Ray would be useful for deep learning workflows and advanced model training outside of Spark ML-lib. For our project because the dataset is so large, using Spark is more efficient on processing this type of structured data.
+
 ### Statement of Collaboration
 **Heta Joshi**
 
