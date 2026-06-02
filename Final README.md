@@ -11,11 +11,11 @@ In this project, we are using a ~190GB dataset of Spotify's complete music archi
 
 ## Notebooks
 
-Milestone 2
+Milestone 2 [Data Exploration](https://github.com/truth-breaker/DSC-232-Group-Project/blob/main/Project%202%20Workspace.ipynb)
 
-Milestone 3
+Milestone 3 [Pre-Processing Analysis](https://github.com/truth-breaker/DSC-232-Group-Project/blob/main/Spotify_Popularity_Explorer.ipynb)
 
-Milestone 4
+Milestone 4 [Secondary Analysis](https://github.com/truth-breaker/DSC-232-Group-Project/blob/main/Models.ipynb)
 
 ## Cluster Configuration
 
