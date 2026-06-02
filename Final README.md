@@ -399,8 +399,10 @@ The framework that was easier to implement was Spark. This is because the machin
 The framework we would choose depends on the amount of processing power. If we were strictly looking for a model that could train fast, have less implementation complexity, and handle distributed training efficiently than the Spark random forest model is ideal. However if the goal of the model was to produce more complex and accurate results and time wasn’t an issue, Ray would be useful for deep learning workflows and advanced model training outside of Spark ML-lib. For our project because the dataset is so large, using Spark is more efficient on processing this type of structured data.
 
 ### Statement of Collaboration
-**Heta Joshi**
+### Team Contributions
 
-**Dennise Arenas** 
-
-**Zytal Lenus**
+| Name    | Title       | Contribution |
+|---------|------------|--------------|
+| Heta    | Contributor | Part 1: Worked on Abstract<br>Part 2: Created visualizations and summary statistics, loading/opening media files, preprocessing plan<br>Part 3: Sampled and joined data, created Random Forest models<br>Part 4: Contributed to write-up and README |
+| Dennise | Contributor | Part 1: Worked on Abstract<br>Part 2: Created visualizations and summary statistics, preliminary analysis, and consolidated team work into organized notebook (Spotify_Pop_Exp) with interpretations<br>Part 3: Cleaned and filtered data, contributed to results and analysis section in README<br>Part 4: Developed Model 2 and wrote its description |
+| Zytal   | Contributor | Part 1: Worked on Abstract<br>Part 2: Organized and structured dataset, created summary statistics<br>Part 3: Contributed to analysis and conclusion sections, performed speedup analysis<br>Part 4: Contributed to README and write-up |
